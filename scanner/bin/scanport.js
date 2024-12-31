@@ -19,7 +19,5 @@ program.parse();
 const [host,portRange = 65535] = program.args;
 const {b} = program.opts();
 
-
-
 scan(host, portRange,b);
 

@@ -1,4 +1,4 @@
-import { Socket } from 'node:net';
+import { Socket,isIP } from 'node:net';
 
 const colors = {
     reset: '\x1b[0m',
@@ -22,14 +22,25 @@ const colors = {
     whiteBg: '\x1b[47m'
 };
 
+//use isIp instead
+//const ipRegex = new RegExp(/^((25[0-5]|(2[0-4]|1[0-9]|[1-9]|)[0-9])(\.(?!$)|$)){4}$/);
 
-
+function handleError(error) {
+    if(error instanceof Error) {
+        console.error(error.message);
+    } else {
+        console.error('An error occur');
+    }
+    process.exit(1);
+}
 
 export async function scan(target, range,shouldSendBanner) {
-    console.log('SCANNING:...\n');
+    if(!isIP(target)) handleError(new Error('Invalid ipv4 ip'));
     let start = 1;
+    console.log(`scanning host:${target} ports: from ${start} to ${range}`);
     while (start <= range) {
-        await scanPort(target, start,shouldSendBanner);
+        
+        scanPort(target, start,shouldSendBanner);
         start++;
     }
 }
@@ -45,11 +56,16 @@ async function scanPort (ip, port,shouldSendBanner) {
     socket.setTimeout(4000);
 
     socket.on('error', (err) => {
+       if(err.code === 'ECONNRESET') {
+            console.log(err.message)
+       }
         socket.destroy();
         closedPorts++;
     });
 
-    socket.on('timeout', () => socket.destroy());
+    socket.on('timeout', (t) => {
+        socket.destroy();
+    });
 
     socket.on('data', (chunk) => {
         let banner = chunk.toString();
